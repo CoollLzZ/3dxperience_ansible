@@ -1,0 +1,31 @@
+# This file is used to install and configure Apache on the host M/c's.
+# Please provide exact values to the below variables.
+
+# Only change the Apache URL when you wanted to install a new version,
+# Remember to specify the artifact version similar to apache as well.
+
+#########################################################################
+artifact: httpd-2.4.54.tar.gz
+artifact_version: httpd-2.4.54
+apache_url: https://dlcdn.apache.org/httpd/httpd-2.4.54.tar.gz
+#########################################################################
+
+# Default apache package is downloading in the following path.
+download_path: /tmp/apache_downloads
+
+# Default extraction path for apache.
+extraction_path: /extracted_apache
+
+# Default installation path for apache.
+installation_path: /apache
+
+# Required default dependencies to be install for Apache.
+# Each dependency should be added as a list using "- dependency" format
+# to be required.
+prerequisities: 
+- gcc
+- pcre*
+- apr*
+
+# Default port for apache
+port: 1011

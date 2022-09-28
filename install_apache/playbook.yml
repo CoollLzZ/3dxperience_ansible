@@ -1,0 +1,76 @@
+---
+- name: Configuration of Apache On the all host M/c's...
+  become: yes
+  hosts: all
+  tasks:
+    - name: checking disk space is greater than 50MB..
+      shell: df -m | head -6 | tail -1 | awk -F " " '{print $4}'
+      register: free_space
+
+    - name: Printing the disk space...
+      debug:
+        var: free_space.stdout
+
+    - name: Exiting because the disk space is less than 50MB
+      fail:
+        msg: Disk space is not sufficient... Free atleast 50MB to continue the installation...
+      when: free_space.stdout | int < 0050
+
+    - name: Installing prerequisities for the apache installation...
+      shell: "{{item}}"
+      with_items:
+        - yum install gcc* -y 
+        - yum install apr* -y
+        - yum install pcre* -y
+
+    - name: Creating The download, extraction and installation directory...
+      file:
+        path: "{{item}}"
+        state: directory
+        mode: 0775
+      loop:
+        - "{{download_path}}"
+        - "{{extraction_path}}"
+        - "{{installation_path}}"
+
+    - name: Downloading the Apache version.
+      get_url:
+        url: "{{apache_url}}"
+        dest: "{{download_path}}"
+    
+    - name: Unzipping artifact into extraction directory...
+      unarchive:
+        src: "{{download_path}}/{{artifact}}"
+        dest: "{{extraction_path}}" 
+        remote_src: yes
+
+    - name: Configuring the build, making the build and installing the build...
+      shell: "{{item}}"
+      args:
+        chdir: "{{extraction_path}}/{{artifact_version}}"
+      with_items:
+        - ./configure --prefix={{installation_path}}
+        - make
+        - make install
+
+    - name: Changing the port number of apache from default to custom...
+      template:
+        src: template_conf/httpd_redhat.conf.j2 
+        dest: "{{installation_path}}/conf/httpd.conf"
+
+    - name: Starting and enabling the service Apache...
+      shell: "{{item}}"
+      args:
+        chdir: "{{installation_path}}/bin/"
+      with_items:
+        - ./apachectl -k start
+
+    - name: Checking Apache using curl...
+      shell: curl localhost:"{{port}}"
+      register: status_apache
+
+    - name: Printing the final status of service...
+      debug:
+        var: status_apache.stdout
+
+
